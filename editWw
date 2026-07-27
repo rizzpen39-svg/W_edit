@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
+    <style>
+        html, body, #container { 
+            width: 100%; 
+            height: 100vh; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: #1e1e1e; 
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <script>
+        let editor;
+        
+        // Monaco Editor ခေါ်ယူပြင်ဆင်ခြင်း
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('container'), {
+                value: "# Sever Code စတင် Host ရေးပါ\nprint('Hello Cloud Platform')",
+                language: 'python',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                fontSize: 14,
+                minimap: { enabled: false }
+            });
+
+            // 🟡 [Draft Auto-Save] User စာရိုက်လိုက်တာနဲ့ ၁ စက္ကန့်အကြာမှာ နောက်ကွယ်ကနေ သိမ်းပေးမည့် Logic
+            let typingTimer;
+            editor.onDidChangeModelContent(() => {
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    if (window.FlutterChannel) {
+                        window.FlutterChannel.postMessage(JSON.stringify({
+                            event: 'AUTO_SAVE_DRAFT',
+                            code: editor.getValue()
+                        }));
+                    }
+                }, 1000); 
+            });
+        });
+
+        // 🟢 [Function 1] FlutterFlow ခလုတ်တွေ (Test, Save, Run) က Code လှမ်းယူမည့် Function
+        function getEditorCode() {
+            return editor ? editor.getValue() : "";
+        }
+
+        // 🟢 [Function 2] Database ထဲက Code တွေကို Editor ထဲ ပြန်ပြချင်ရင် သုံးမည့် Function
+        function setEditorCode(newCode) {
+            if (editor) {
+                editor.setValue(newCode);
+            }
+        }
+    </script>
+</body>
+</html>
